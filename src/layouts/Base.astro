@@ -1,0 +1,94 @@
+---
+import '../styles/global.css';
+import { url } from '../lib/league';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description = 'Results and standings for our F1 26 league.' } = Astro.props;
+const fullTitle = title ? `${title} · F1 26 League` : 'F1 26 League';
+const path = Astro.url.pathname.replace(/\/$/, '');
+const nav = [
+  { href: url(), label: 'Standings', active: path === url().replace(/\/$/, '') },
+  { href: url('calendar/'), label: 'Calendar', active: path.includes('/calendar') || path.includes('/races/') },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,900&display=swap" rel="stylesheet" />
+    <meta name="description" content={description} />
+    <title>{fullTitle}</title>
+  </head>
+  <body>
+    <header>
+      <div class="container bar">
+        <a class="brand" href={url()}><span class="mark">F1</span> 26 League</a>
+        <nav>
+          {nav.map((n) => <a href={n.href} class:list={{ active: n.active }}>{n.label}</a>)}
+        </nav>
+      </div>
+    </header>
+    <main class="container">
+      <slot />
+    </main>
+    <footer class="container muted">2026 season</footer>
+  </body>
+</html>
+
+<style>
+  header {
+    border-bottom: 3px solid var(--accent);
+    background: var(--surface);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 56px;
+  }
+  .brand {
+    text-decoration: none;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .mark {
+    color: var(--accent);
+  }
+  nav {
+    display: flex;
+    gap: 4px;
+  }
+  nav a {
+    text-decoration: none;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+  nav a.active,
+  nav a:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  main {
+    padding-top: 24px;
+    padding-bottom: 40px;
+  }
+  footer {
+    padding-bottom: 32px;
+    font-size: 0.85rem;
+  }
+</style>

@@ -1,0 +1,45 @@
+# `name` is exactly how the game writes the team in exports; it's used to match CSV rows.
+- id: mclaren
+  name: McLaren
+  short: McLaren
+  color: "#FF8000"
+- id: ferrari
+  name: Scuderia Ferrari HP
+  short: Ferrari
+  color: "#E8002D"
+- id: redbull
+  name: Oracle Red Bull Racing
+  short: Red Bull
+  color: "#3671C6"
+- id: mercedes
+  name: Mercedes-AMG F1 Team
+  short: Mercedes
+  color: "#27F4D2"
+- id: williams
+  name: Atlassian Williams F1 Team
+  short: Williams
+  color: "#64C4FF"
+- id: racingbulls
+  name: Visa Cash App Racing Bulls
+  short: Racing Bulls
+  color: "#6692FF"
+- id: alpine
+  name: Alpine
+  short: Alpine
+  color: "#FF87BC"
+- id: astonmartin
+  name: Aston Martin Aramco
+  short: Aston Martin
+  color: "#229971"
+- id: haas
+  name: Haas
+  short: Haas
+  color: "#B6BABD"
+- id: audi
+  name: Audi Revolut F1 Team
+  short: Audi
+  color: "#C4001A"
+- id: cadillac
+  name: Cadillac Formula 1® Team
+  short: Cadillac
+  color: "#C9A86A"

@@ -1,0 +1,6 @@
+race: miami
+sessions:
+  - type: race
+    date: 2026-10-12
+    source: csv
+    file: session_results_12102026_2228.csv

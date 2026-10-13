@@ -1,0 +1,205 @@
+---
+import Base from '../layouts/Base.astro';
+import DriverName from '../components/DriverName.astro';
+import PointsChart from '../components/PointsChart.astro';
+import {
+  getLeague,
+  driverStandings,
+  constructorStandings,
+  progression,
+  mainSession,
+  entryFor,
+  positionLabel,
+  raceDate,
+  formatDate,
+  url,
+} from '../lib/league';
+
+const league = await getLeague();
+const standings = driverStandings(league);
+const constructors = constructorStandings(league);
+const leader = standings[0]?.points ?? 0;
+const latest = league.done.at(-1);
+const next = league.calendar.find((r) => !r.done);
+const latestSession = latest && mainSession(latest);
+---
+
+<Base>
+  <h1>2026 Season</h1>
+  <p class="muted lede">
+    Round {league.done.length} of {league.calendar.length}
+    {next && <> · Next up: <strong>R{next.round} {next.name}</strong></>}
+  </p>
+
+  <div class="grid-2">
+    <section>
+      <h2>Drivers' championship</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">Pos</th>
+              <th>Driver</th>
+              <th class="num">Wins</th>
+              <th class="num">Pod.</th>
+              <th class="num">Pts</th>
+              <th class="num">Gap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              standings.map((s, i) => (
+                <tr>
+                  <td class="num">{i + 1}</td>
+                  <td>
+                    <DriverName driver={s.driver} />
+                    <span class="muted team hide-sm">{s.driver.team.short}</span>
+                  </td>
+                  <td class="num">{s.wins}</td>
+                  <td class="num">{s.podiums}</td>
+                  <td class="num pts">{s.points}</td>
+                  <td class="num muted">{i === 0 ? '' : `−${leader - s.points}`}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {
+      latest && latestSession && (
+        <section>
+          <h2>Latest race</h2>
+          <div class="card">
+            <div class="latest-head">
+              <a href={url(`races/${latest.id}/`)}>
+                <strong>
+                  R{latest.round} · {latest.name}
+                </strong>
+              </a>
+              <span class="muted">{formatDate(raceDate(latest))}</span>
+            </div>
+            <ol>
+              {league.drivers
+                .map((d) => ({ d, e: entryFor(latestSession, d) }))
+                .sort((a, b) => (a.e?.pos ?? a.e?.posMin ?? 99) - (b.e?.pos ?? b.e?.posMin ?? 99))
+                .map(({ d, e }) => (
+                  <li>
+                    <span class="num pos">{positionLabel(e)}</span>
+                    <DriverName driver={d} name={d.name} />
+                    <span class="num muted">{e?.points ?? 0} pts</span>
+                  </li>
+                ))}
+            </ol>
+            <a class="more" href={url(`races/${latest.id}/`)}>
+              Full result →
+            </a>
+          </div>
+        </section>
+      )
+    }
+  </div>
+
+  <section>
+    <h2>Points progression</h2>
+    <PointsChart rounds={league.done} series={progression(league)} />
+  </section>
+
+  <section>
+    <h2>Constructors' championship</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">Pos</th>
+            <th>Team</th>
+            <th class="num">Pts</th>
+            <th>Points by driver</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            constructors.map((c, i) => {
+              const human = league.drivers.find((d) => d.team.id === c.team.id);
+              return (
+                <tr class:list={{ human: !!human }} style={`--team: ${c.team.color}`}>
+                  <td class="num">{i + 1}</td>
+                  <td>
+                    <span class="team-bar" />
+                    {c.team.short}
+                  </td>
+                  <td class="num pts">{c.points}</td>
+                  <td class="muted contrib">
+                    {[...c.drivers.entries()]
+                      .filter(([, p]) => p > 0)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([name, p]) => `${name} ${p}`)
+                      .join(' · ') || '—'}
+                  </td>
+                </tr>
+              );
+            })
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="muted note">Every car counts, AI teammates included, as in the game.</p>
+  </section>
+</Base>
+
+<style>
+  .lede {
+    margin-top: -0.4em;
+    margin-bottom: 24px;
+  }
+  .team {
+    font-size: 0.85em;
+    margin-left: 6px;
+  }
+  .pts {
+    font-weight: 700;
+  }
+  .latest-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  ol {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 3.2em 1fr auto;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  li:last-child {
+    border-bottom: none;
+  }
+  .pos {
+    text-align: left;
+    font-weight: 700;
+  }
+  .latest-head a,
+  .more {
+    text-decoration: none;
+  }
+  .more {
+    font-size: 0.9rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .contrib {
+    white-space: normal;
+    min-width: 9em;
+    font-size: 0.88rem;
+  }
+  .note {
+    font-size: 0.85rem;
+  }
+</style>

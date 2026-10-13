@@ -1,0 +1,181 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import Classification from '../../components/Classification.astro';
+import DriverName from '../../components/DriverName.astro';
+import { getLeague, entryFor, positionLabel, formatDate, url, type Round } from '../../lib/league';
+
+export async function getStaticPaths() {
+  const league = await getLeague();
+  return league.done.map((round) => ({ params: { id: round.id }, props: { round } }));
+}
+
+interface Props {
+  round: Round;
+}
+
+const { round } = Astro.props;
+const league = await getLeague();
+const idx = league.done.findIndex((r) => r.id === round.id);
+const prev = league.done[idx - 1];
+const next = league.done[idx + 1];
+const sessionTitle = { race: 'Race', sprint: 'Sprint', qualifying: 'Qualifying' };
+---
+
+<Base title={round.name}>
+  <p class="muted kicker">Round {round.round} · {round.circuit}</p>
+  <h1>{round.name}</h1>
+
+  {
+    round.sessions.map((s) => (
+      <section>
+        {round.sessions.length > 1 && <h2>{sessionTitle[s.type]}</h2>}
+        <p class="muted meta">
+          {s.date && formatDate(s.date)}
+          <span class="badge">{s.source === 'csv' ? 'from export' : 'from screenshot'}</span>
+        </p>
+
+        <div class="league">
+          {league.drivers
+            .map((d) => ({ d, e: entryFor(s, d) }))
+            .sort((a, b) => (a.e?.pos ?? a.e?.posMin ?? 99) - (b.e?.pos ?? b.e?.posMin ?? 99))
+            .map(({ d, e }) => (
+              <div class="stat" style={`--team: ${d.team.color}`}>
+                <div class="value">{positionLabel(e)}</div>
+                <div class="who">
+                  <DriverName driver={d} />
+                </div>
+                <div class="label">
+                  {e?.points ?? 0} pts
+                  {e?.grid && e.pos && e.status === 'finished' && ` · from P${e.grid}`}
+                  {e?.fastestLap && <span class="badge fl">FL</span>}
+                </div>
+              </div>
+            ))}
+        </div>
+
+        {s.notes && <p class="muted note">{s.notes}</p>}
+
+        <h2>Classification</h2>
+        <Classification session={s} />
+
+        {s.incidents.length > 0 && (
+          <>
+            <h2 class="spaced">Incidents &amp; penalties</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="num">Lap</th>
+                    <th class="num">Time</th>
+                    <th>Driver</th>
+                    <th>Incident</th>
+                    <th>Penalty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.incidents.map((i) => (
+                    <tr class:list={{ human: !!i.driver }} style={i.team && `--team: ${i.team.color}`}>
+                      <td class="num">{i.lap ?? '—'}</td>
+                      <td class="num muted">{i.time}</td>
+                      <td>
+                        <DriverName driver={i.driver} team={i.team} name={i.name} />
+                      </td>
+                      <td>{i.incident}</td>
+                      <td class:list={{ penalty: i.penalty !== 'Warning' }}>{i.penalty}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {s.screenshots.length > 0 && (
+          <>
+            <h2 class="spaced">Screenshot{s.screenshots.length > 1 && 's'}</h2>
+            <div class="shots">
+              {s.screenshots.map((img) => (
+                <a href={img.src} target="_blank" rel="noopener">
+                  <Image src={img} alt={`${round.name} result screenshot`} widths={[640, 1280]} sizes="(min-width: 1040px) 1000px, 100vw" />
+                </a>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+    ))
+  }
+
+  <nav class="pager">
+    {prev ? <a href={url(`races/${prev.id}/`)}>← R{prev.round} {prev.name}</a> : <span />}
+    {next ? <a href={url(`races/${next.id}/`)}>R{next.round} {next.name} →</a> : <span />}
+  </nav>
+</Base>
+
+<style>
+  .kicker {
+    margin: 0 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.85rem;
+  }
+  .meta {
+    margin-top: -0.4em;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .league {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .league .stat {
+    border-top: 3px solid var(--team);
+  }
+  .who {
+    font-weight: 700;
+    margin: 2px 0;
+  }
+  .who :global(.team-bar) {
+    display: none;
+  }
+  .note {
+    font-size: 0.9rem;
+    margin-top: -12px;
+  }
+  .spaced {
+    margin-top: 28px;
+  }
+  td.penalty {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .shots img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .shots a + a {
+    display: block;
+    margin-top: 12px;
+  }
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 36px;
+    font-weight: 600;
+  }
+  .pager a {
+    text-decoration: none;
+    color: var(--muted);
+  }
+  .pager a:hover {
+    color: var(--text);
+  }
+</style>

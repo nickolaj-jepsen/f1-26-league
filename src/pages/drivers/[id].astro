@@ -1,0 +1,117 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getLeague, driverStandings, entryFor, positionLabel, url, type Driver } from '../../lib/league';
+
+export async function getStaticPaths() {
+  const league = await getLeague();
+  return league.drivers.map((driver) => ({ params: { id: driver.id }, props: { driver } }));
+}
+
+interface Props {
+  driver: Driver;
+}
+
+const { driver } = Astro.props;
+const league = await getLeague();
+const standings = driverStandings(league);
+const champPos = standings.findIndex((s) => s.driver.id === driver.id) + 1;
+const s = standings[champPos - 1];
+
+const tiles: [string, string | number][] = [
+  ['Championship', `P${champPos}`],
+  ['Points', s.points],
+  ['Wins', s.wins],
+  ['Podiums', s.podiums],
+  ['Fastest laps', s.fastestLaps],
+  ['Best finish', s.bestFinish ? `P${s.bestFinish}` : '—'],
+  ['Avg finish', s.avgFinish ? s.avgFinish.toFixed(1) : '—'],
+  ['Places gained', s.positionsGained > 0 ? `+${s.positionsGained}` : s.positionsGained],
+  ['Starts', s.starts],
+  ['DNF', s.dnfs],
+  ['DNS', s.dns],
+  ['Warnings', s.warnings],
+  ['Penalties', s.penalties],
+];
+
+const rows = league.done.flatMap((round) =>
+  round.sessions.map((session) => ({ round, session, e: entryFor(session, driver) })),
+);
+---
+
+<Base title={driver.name}>
+  <div class="head" style={`--team: ${driver.team.color}`}>
+    <h1>{driver.name}</h1>
+    <p class="muted">{driver.gamertag} · {driver.team.name}</p>
+  </div>
+
+  <section class="stats">
+    {
+      tiles.map(([label, value]) => (
+        <div class="stat">
+          <div class="value">{value}</div>
+          <div class="label">{label}</div>
+        </div>
+      ))
+    }
+  </section>
+  <p class="muted note">Warnings and penalties only come from exported races; screenshots don't show them.</p>
+
+  <section>
+    <h2>Results</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">Rnd</th>
+            <th>Grand Prix</th>
+            <th class="num">Grid</th>
+            <th class="num">Finish</th>
+            <th class="num">Best lap</th>
+            <th class="num">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map(({ round, session, e }) => (
+              <tr>
+                <td class="num">{round.round}</td>
+                <td>
+                  <a href={url(`races/${round.id}/`)}>{round.name}</a>
+                  {session.type !== 'race' && <span class="badge">{session.type}</span>}
+                </td>
+                <td class="num">{e?.grid ?? '—'}</td>
+                <td class="num">{positionLabel(e)}</td>
+                <td class="num">{e?.fastestLap ? <span class="badge fl">{e.best}</span> : (e?.best ?? '—')}</td>
+                <td class="num">{e?.points ?? 0}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .head {
+    border-left: 6px solid var(--team);
+    padding-left: 14px;
+    margin-bottom: 24px;
+  }
+  .head h1 {
+    margin-bottom: 0.1em;
+  }
+  .head p {
+    margin: 0;
+  }
+  .note {
+    font-size: 0.85rem;
+    margin-top: 8px;
+  }
+  td a {
+    text-decoration: none;
+  }
+  td a:hover {
+    text-decoration: underline;
+  }
+</style>

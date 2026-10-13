@@ -1,0 +1,6 @@
+race: china
+sessions:
+  - type: race
+    date: 2026-09-14
+    source: csv
+    file: session_results_14092026_2224.csv

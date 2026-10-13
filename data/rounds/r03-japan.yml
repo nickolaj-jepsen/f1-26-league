@@ -1,0 +1,26 @@
+race: japan
+sessions:
+  - type: race
+    source: screenshot
+    screenshots: [../screenshots/r03-japan.webp]
+    notes: Only P1–P16 visible in the screenshot. Nicky finished ahead of Jimmy, both outside the points.
+    classification:
+      - { pos: 1, driver: casper, team: mclaren, points: 25 }
+      - { pos: 2, name: Lewis HAMILTON, team: ferrari, points: 18 }
+      - { pos: 3, name: Max VERSTAPPEN, team: redbull, points: 15 }
+      - { pos: 4, name: Andrea Kimi ANTONELLI, team: mercedes, points: 12 }
+      - { pos: 5, name: Alexander ALBON, team: williams, points: 10 }
+      - { pos: 6, name: Carlos SAINZ, team: williams, points: 8 }
+      - { pos: 7, name: Arvid LINDBLAD, team: racingbulls, points: 6 }
+      - { pos: 8, name: Pierre GASLY, team: alpine, points: 4 }
+      - { pos: 9, name: Isack HADJAR, team: redbull, points: 2 }
+      - { pos: 10, name: Fernando ALONSO, team: astonmartin, points: 1 }
+      - { pos: 11, name: Esteban OCON, team: haas, points: 0 }
+      - { pos: 12, name: Franco COLAPINTO, team: alpine, points: 0 }
+      - { pos: 13, name: Nico HULKENBERG, team: audi, points: 0 }
+      - { pos: 14, name: Oliver BEARMAN, team: haas, points: 0 }
+      - { pos: 15, name: Sergio PÉREZ, team: cadillac, points: 0 }
+      - { pos: 16, name: Valtteri BOTTAS, team: cadillac, points: 0 }
+      - { posMin: 17, driver: nicky, team: ferrari, points: 0 }
+      - { posMin: 18, driver: jimmy, team: mercedes, points: 0 }
+      - { driver: nickolaj, team: racingbulls, status: dns, points: 0 }

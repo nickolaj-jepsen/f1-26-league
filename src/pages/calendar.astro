@@ -1,0 +1,113 @@
+---
+import Base from '../layouts/Base.astro';
+import DriverName from '../components/DriverName.astro';
+import { getLeague, mainSession, raceDate, formatDate, url } from '../lib/league';
+
+const league = await getLeague();
+const nextId = league.calendar.find((r) => !r.done)?.id;
+---
+
+<Base title="Calendar">
+  <h1>Calendar</h1>
+  <p class="muted lede">{league.done.length} of {league.calendar.length} rounds raced</p>
+
+  <ol class="rounds">
+    {
+      league.calendar.map((r) => {
+        const s = mainSession(r);
+        const winner = s?.entries.find((e) => e.pos === 1);
+        const inner = (
+          <>
+            <span class="round">R{r.round}</span>
+            <span class="info">
+              <strong>{r.name}</strong>
+              <span class="muted small">
+                {r.circuit}
+                {r.sprint && ' · sprint weekend'}
+              </span>
+            </span>
+            <span class="result">
+              {r.done ? (
+                <>
+                  {winner && <DriverName entry={winner} />}
+                  <span class="muted small">
+                    {formatDate(raceDate(r))} <span class="badge">{s?.source === 'csv' ? 'export' : 'screenshot'}</span>
+                  </span>
+                </>
+              ) : r.id === nextId ? (
+                <span class="badge next">Next</span>
+              ) : (
+                <span class="muted small">Upcoming</span>
+              )}
+            </span>
+          </>
+        );
+        return (
+          <li class:list={{ done: r.done }}>
+            {r.done ? (
+              <a class="row" href={url(`races/${r.id}/`)}>
+                {inner}
+              </a>
+            ) : (
+              <div class="row">{inner}</div>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</Base>
+
+<style>
+  .lede {
+    margin-top: -0.4em;
+  }
+  .rounds {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  li + li {
+    border-top: 1px solid var(--border);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 2.6em 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+    text-decoration: none;
+  }
+  li:not(.done) .row {
+    opacity: 0.7;
+  }
+  a.row:hover {
+    background: var(--surface-2);
+  }
+  .round {
+    font-weight: 900;
+    font-style: italic;
+    color: var(--muted);
+  }
+  .info,
+  .result {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .result {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+  .badge.next {
+    background: var(--accent);
+    color: #fff;
+  }
+</style>

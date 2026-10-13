@@ -1,0 +1,121 @@
+---
+import type { Driver, Round } from '../lib/league';
+
+interface Props {
+  rounds: Round[];
+  series: { driver: Driver; points: number[] }[];
+}
+
+const { rounds, series } = Astro.props;
+
+const W = 520;
+const H = 300;
+const pad = { top: 16, right: 100, bottom: 30, left: 34 };
+const plotW = W - pad.left - pad.right;
+const plotH = H - pad.top - pad.bottom;
+
+const max = Math.max(25, ...series.flatMap((s) => s.points));
+const yMax = Math.ceil(max / 25) * 25;
+const steps = rounds.length; // x=0 is the season start at 0 points
+const x = (i: number) => pad.left + (steps === 0 ? 0 : (i / steps) * plotW);
+const y = (v: number) => pad.top + plotH - (v / yMax) * plotH;
+const ticks = Array.from({ length: yMax / 25 + 1 }, (_, i) => i * 25);
+
+const lines = series.map((s) => {
+  const pts = [0, ...s.points];
+  return {
+    ...s,
+    total: pts.at(-1)!,
+    d: pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' '),
+    dots: pts.slice(1).map((v, i) => ({ cx: x(i + 1), cy: y(v) })),
+  };
+});
+
+// Nudge end labels apart so drivers on equal points don't overlap.
+const labels = lines
+  .map((l) => ({ ...l, ly: y(l.total) }))
+  .sort((a, b) => a.ly - b.ly);
+for (let i = 1; i < labels.length; i++) {
+  if (labels[i].ly - labels[i - 1].ly < 17) labels[i].ly = labels[i - 1].ly + 17;
+}
+---
+
+<figure class="card chart">
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Cumulative points by round">
+    {
+      ticks.map((t) => (
+        <g>
+          <line x1={pad.left} x2={W - pad.right} y1={y(t)} y2={y(t)} class="grid" />
+          <text x={pad.left - 8} y={y(t) + 4} class="axis" text-anchor="end">
+            {t}
+          </text>
+        </g>
+      ))
+    }
+    {
+      rounds.map((r, i) => (
+        <text x={x(i + 1)} y={H - 8} class="axis" text-anchor="middle">
+          <title>{r.name}</title>R{r.round}
+        </text>
+      ))
+    }
+    {
+      lines.map((l) => (
+        <g style={`--c: ${l.driver.team.color}`}>
+          <path d={l.d} class="line" />
+          {l.dots.map((p) => (
+            <circle cx={p.cx} cy={p.cy} r="3.5" class="dot" />
+          ))}
+        </g>
+      ))
+    }
+    {
+      labels.map((l) => (
+        <text x={W - pad.right + 10} y={l.ly + 4} class="label" style={`--c: ${l.driver.team.color}`}>
+          {l.driver.name} <tspan class="pts">{l.total}</tspan>
+        </text>
+      ))
+    }
+  </svg>
+</figure>
+
+<style>
+  .chart {
+    margin: 0;
+    padding: 12px 8px 4px;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .grid {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+  .axis {
+    fill: var(--muted);
+    font-size: 13px;
+  }
+  .line {
+    fill: none;
+    stroke: var(--c);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .dot {
+    fill: var(--c);
+    stroke: var(--surface);
+    stroke-width: 1.5;
+  }
+  .label {
+    fill: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .label .pts {
+    fill: var(--muted);
+    font-weight: 400;
+  }
+</style>

@@ -1,0 +1,28 @@
+---
+import { url, type Entry, type Driver, type Team } from '../lib/league';
+
+interface Props {
+  entry?: Entry;
+  driver?: Driver;
+  team?: Team;
+  name?: string;
+}
+
+const { entry } = Astro.props;
+const driver = Astro.props.driver ?? entry?.driver;
+const team = Astro.props.team ?? entry?.team ?? driver?.team;
+const name = Astro.props.name ?? driver?.name ?? entry?.name;
+---
+
+<span class="dn" style={team && `--team: ${team.color}`}>
+  <span class="team-bar"></span>{driver ? <a href={url(`drivers/${driver.id}/`)}>{name}</a> : <span>{name}</span>}
+</span>
+
+<style>
+  a {
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+</style>

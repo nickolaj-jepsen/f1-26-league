@@ -1,0 +1,52 @@
+---
+import DriverName from './DriverName.astro';
+import { positionLabel, type Session } from '../lib/league';
+
+interface Props {
+  session: Session;
+}
+
+const { session } = Astro.props;
+const has = (k: 'grid' | 'stops' | 'best' | 'time') => session.entries.some((e) => e[k] !== undefined);
+const cols = { grid: has('grid'), stops: has('stops'), best: has('best'), time: has('time') };
+---
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="num">Pos</th>
+        <th>Driver</th>
+        <th>Team</th>
+        {cols.grid && <th class="num">Grid</th>}
+        {cols.stops && <th class="num">Stops</th>}
+        {cols.best && <th class="num">Best</th>}
+        {cols.time && <th class="num">Time</th>}
+        <th class="num">Pts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        session.entries.map((e) => (
+          <tr class:list={{ human: e.human }} style={`--team: ${e.team.color}`}>
+            <td class="num">{positionLabel(e)}</td>
+            <td>
+              <DriverName entry={e} />
+              {e.human && !e.driver && <span class="badge">guest</span>}
+            </td>
+            <td class="muted">{e.team.short}</td>
+            {cols.grid && <td class="num">{e.grid ?? '—'}</td>}
+            {cols.stops && <td class="num">{e.stops ?? '—'}</td>}
+            {cols.best && (
+              <td class="num">
+                {e.fastestLap ? <span class="badge fl" title="Fastest lap">{e.best}</span> : (e.best ?? '—')}
+              </td>
+            )}
+            {cols.time && <td class="num">{e.time ?? (e.status === 'finished' ? '—' : e.status.toUpperCase())}</td>}
+            <td class="num">{e.points}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
