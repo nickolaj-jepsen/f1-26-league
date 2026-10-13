@@ -1,23 +1,28 @@
 # League drivers. `team` is their seat for the season: the game anonymises other humans as
 # "Player" in exports, so CSV rows are matched by team. `aliases` are every spelling of the
-# gamertag seen in exports and screenshots (matched case-insensitively).
+# gamertag seen in exports and screenshots (matched case-insensitively). `number` is their race
+# number, shown on the site.
 - id: casper
   name: Casper
+  number: 7
   gamertag: G4lXY
   aliases: [G4lXY, G4IXY]
   team: mclaren
 - id: nicky
   name: Nicky
+  number: 19
   gamertag: Sm4ck!
   aliases: [Sm4ck!, Sm4cki, Sm4ck]
   team: ferrari
 - id: jimmy
   name: Jimmy
+  number: 26
   gamertag: DieAlot
   aliases: [DieAlot]
   team: mercedes
 - id: nickolaj
   name: Nickolaj
+  number: 42
   gamertag: fireproof
   aliases: [fireproof]
   team: racingbulls

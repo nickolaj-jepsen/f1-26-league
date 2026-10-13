@@ -1,0 +1,117 @@
+---
+import TrackMap from './TrackMap.astro';
+import Flag from './Flag.astro';
+import { getLeague, mainSession, entryFor, positionLabel, raceDate, formatDate, url, type Round } from '../lib/league';
+
+interface Props {
+  round: Round;
+}
+
+const { round } = Astro.props;
+const league = await getLeague();
+const session = mainSession(round);
+const results = session
+  ? league.drivers
+      .map((d) => ({ d, e: entryFor(session, d) }))
+      .sort((a, b) => (a.e?.pos ?? a.e?.posMin ?? 99) - (b.e?.pos ?? b.e?.posMin ?? 99))
+  : [];
+const winnerColor = session?.entries.find((e) => e.pos === 1)?.team.color;
+---
+
+<!-- Raced rounds link to their race page and list the league result; upcoming ones are compact. -->
+<div class:list={['panel', 'race-card', { upcoming: !round.done }]} style={winnerColor && `--track: ${winnerColor}`}>
+  <p class="kicker">
+    R{round.round} <Flag code={round.flag} label={round.country} />
+    {round.done ? formatDate(raceDate(round)) : round.country}
+  </p>
+  <h3 class="display">{round.name}</h3>
+  <div class="race-body">
+    <TrackMap track={round.track} class="map" />
+    {
+      round.done ? (
+        <ol class="mini">
+          {results.map(({ d, e }) => (
+            <li style={`--team: ${d.team.color}`}>
+              <span class="mpos">{positionLabel(e)}</span>
+              <span class="team-bar" />
+              <span class="mname">{d.name}</span>
+              <span class="muted">{e?.points ?? 0}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p class="muted circuit">{round.circuit}</p>
+      )
+    }
+  </div>
+  {
+    round.done && (
+      <a class="big-link" href={url(`races/${round.id}/`)}>
+        Full result
+      </a>
+    )
+  }
+</div>
+
+<style>
+  .race-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 100%;
+  }
+  .race-card h3 {
+    font-size: 1.2rem;
+    margin: 0 0 10px;
+  }
+  .race-body {
+    display: grid;
+    grid-template-columns: minmax(90px, 38%) 1fr;
+    gap: 18px;
+    align-items: center;
+    flex: 1;
+  }
+  .race-body :global(.map) {
+    max-height: 140px;
+  }
+  .big-link {
+    margin-top: 12px;
+  }
+  .upcoming {
+    --track: var(--accent);
+  }
+  .upcoming .race-body {
+    grid-template-columns: 72px 1fr;
+  }
+  .upcoming .race-body :global(.map) {
+    max-height: 64px;
+  }
+  .upcoming h3 {
+    margin-bottom: 6px;
+  }
+  .circuit {
+    margin: 0;
+  }
+  .mini {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .mini li {
+    display: grid;
+    grid-template-columns: 3em auto 1fr auto;
+    align-items: center;
+    padding: 5px 0;
+  }
+  .mini li + li {
+    border-top: 1px solid var(--line);
+  }
+  .mpos {
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+  }
+  .mname {
+    font-weight: 600;
+  }
+</style>

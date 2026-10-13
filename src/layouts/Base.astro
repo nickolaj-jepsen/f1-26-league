@@ -11,7 +11,7 @@ const { title, description = 'Results and standings for our F1 26 league.' } = A
 const fullTitle = title ? `${title} · F1 26 League` : 'F1 26 League';
 const path = Astro.url.pathname.replace(/\/$/, '');
 const nav = [
-  { href: url(), label: 'Standings', active: path === url().replace(/\/$/, '') },
+  { href: url(), label: 'Standings', active: path === url().replace(/\/$/, '') || path.includes('/drivers/') },
   { href: url('calendar/'), label: 'Calendar', active: path.includes('/calendar') || path.includes('/races/') },
 ];
 ---
@@ -21,17 +21,21 @@ const nav = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0a0a0e" />
     <link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,900&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Saira:ital,wdth,wght@0,100..125,400..800;1,100..125,400..800&display=swap"
+      rel="stylesheet"
+    />
     <meta name="description" content={description} />
     <title>{fullTitle}</title>
   </head>
   <body>
     <header>
       <div class="container bar">
-        <a class="brand" href={url()}><span class="mark">F1</span> 26 League</a>
+        <a class="brand" href={url()}><span class="mark">F1</span><span>26 League</span></a>
         <nav>
           {nav.map((n) => <a href={n.href} class:list={{ active: n.active }}>{n.label}</a>)}
         </nav>
@@ -40,55 +44,106 @@ const nav = [
     <main class="container">
       <slot />
     </main>
-    <footer class="container muted">2026 season</footer>
+    <footer class="container">
+      <span>F1 26 League · 2026 season</span>
+      <span>
+        Circuit outlines: <a href="https://github.com/bacinger/f1-circuits">bacinger/f1-circuits</a> · Flags:
+        <a href="https://github.com/lipis/flag-icons">flag-icons</a> (both MIT)
+      </span>
+    </footer>
   </body>
 </html>
 
 <style>
   header {
-    border-bottom: 3px solid var(--accent);
-    background: var(--surface);
+    background: #000;
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
   }
   .bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    height: 56px;
+    gap: 12px;
+    height: 58px;
   }
   .brand {
+    position: relative;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     text-decoration: none;
-    font-weight: 900;
+    font-stretch: 125%;
+    font-weight: 800;
     font-style: italic;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     text-transform: uppercase;
     white-space: nowrap;
   }
+  /* Red underline from the screen's left edge to just past the logo, at any width. */
+  .brand::after {
+    content: '';
+    position: absolute;
+    right: -28px;
+    bottom: 0;
+    width: 100vw;
+    height: 3px;
+    background: var(--accent);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  }
   .mark {
-    color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+    padding: 0 10px 0 7px;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
   }
   nav {
     display: flex;
-    gap: 4px;
   }
   nav a {
     text-decoration: none;
+    font-stretch: 112%;
     font-weight: 600;
-    padding: 6px 10px;
-    border-radius: 6px;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 19px 10px 17px;
     color: var(--muted);
+    border-bottom: 2px solid transparent;
   }
-  nav a.active,
   nav a:hover {
     color: var(--text);
-    background: var(--surface-2);
+  }
+  nav a.active {
+    color: var(--text);
+    border-bottom-color: var(--text);
+  }
+  @media (max-width: 480px) {
+    .brand {
+      font-size: 0.95rem;
+    }
+    nav a {
+      padding-inline: 8px;
+      font-size: 0.75rem;
+    }
   }
   main {
-    padding-top: 24px;
-    padding-bottom: 40px;
+    padding-top: 28px;
+    padding-bottom: 48px;
   }
   footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px 24px;
+    padding-top: 18px;
     padding-bottom: 32px;
-    font-size: 0.85rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.78rem;
+    color: var(--dim);
+  }
+  footer a {
+    color: var(--muted);
   }
 </style>

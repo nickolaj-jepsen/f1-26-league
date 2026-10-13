@@ -1,0 +1,60 @@
+---
+import { trackShape } from '../lib/tracks';
+
+interface Props {
+  track: string;
+  /** Animate the outline drawing itself once on load. */
+  draw?: boolean;
+  class?: string;
+  label?: string;
+}
+
+const { track, draw = false, class: className, label } = Astro.props;
+const { d, width, height } = trackShape(track);
+const pad = 8;
+---
+
+<svg
+  class:list={['track', className, { draw }]}
+  viewBox={`${-pad} ${-pad} ${width + pad * 2} ${height + pad * 2}`}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  {draw && <path d={d} class="base" />}
+  <path d={d} class="line" pathLength="1" />
+</svg>
+
+<style>
+  .track {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  path {
+    fill: none;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .line {
+    stroke: var(--track, var(--text));
+    stroke-width: var(--track-w, 6);
+  }
+  .base {
+    stroke: var(--track-base, var(--surface-3));
+    stroke-width: calc(var(--track-w, 6) * 2.2);
+  }
+  .draw .line {
+    stroke-dasharray: 1;
+    animation: draw 1.4s cubic-bezier(0.5, 0, 0.3, 1) 0.15s both;
+  }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+</style>

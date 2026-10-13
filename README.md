@@ -10,12 +10,15 @@ Everything lives in `data/`:
 
 | Path | What |
 | --- | --- |
-| `drivers.yml` | League drivers, their seat for the season, and gamertag spellings |
+| `drivers.yml` | League drivers, race numbers, their seat for the season, and gamertag spellings |
 | `teams.yml` | Teams as the game names them, plus colours |
 | `calendar.yml` | The 24-round 2026 calendar |
 | `rounds/rNN-<id>.yml` | One file per raced round, sourced from a CSV export or screenshots |
 | `raw/` | The game's CSV exports, unchanged |
 | `screenshots/` | Result screenshots for races without an export |
+| `tracks/` | Circuit outlines (GeoJSON) from [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits), MIT |
+
+Country flags in `public/flags/` are from [flag-icons](https://github.com/lipis/flag-icons) (MIT); Spain is simplified to the civil flag.
 
 Points are taken from the game as-is. The constructors' table counts every car, AI included.
 

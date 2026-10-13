@@ -11,16 +11,17 @@ const has = (k: 'grid' | 'stops' | 'best' | 'time') => session.entries.some((e) 
 const cols = { grid: has('grid'), stops: has('stops'), best: has('best'), time: has('time') };
 ---
 
+<!-- On phones the optional columns fold into a second line under the driver's name. -->
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
         <th class="num">Pos</th>
         <th>Driver</th>
-        <th>Team</th>
-        {cols.grid && <th class="num">Grid</th>}
-        {cols.stops && <th class="num">Stops</th>}
-        {cols.best && <th class="num">Best</th>}
+        <th class="opt">Team</th>
+        {cols.grid && <th class="num opt">Grid</th>}
+        {cols.stops && <th class="num opt">Stops</th>}
+        {cols.best && <th class="num opt">Best</th>}
         {cols.time && <th class="num">Time</th>}
         <th class="num">Pts</th>
       </tr>
@@ -29,24 +30,72 @@ const cols = { grid: has('grid'), stops: has('stops'), best: has('best'), time: 
       {
         session.entries.map((e) => (
           <tr class:list={{ human: e.human }} style={`--team: ${e.team.color}`}>
-            <td class="num">{positionLabel(e)}</td>
-            <td>
+            <td class="num pos">{positionLabel(e).replace(/^P/, '')}</td>
+            <td class="driver">
               <DriverName entry={e} />
               {e.human && !e.driver && <span class="badge">guest</span>}
+              <div class="sub">
+                {[
+                  e.team.short,
+                  e.grid && `grid ${e.grid}`,
+                  e.stops !== undefined && `${e.stops} stop${e.stops === 1 ? '' : 's'}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+                {e.best && (e.fastestLap ? <span class="badge fl">{e.best}</span> : <span> · {e.best}</span>)}
+              </div>
             </td>
-            <td class="muted">{e.team.short}</td>
-            {cols.grid && <td class="num">{e.grid ?? '—'}</td>}
-            {cols.stops && <td class="num">{e.stops ?? '—'}</td>}
+            <td class="muted opt">{e.team.short}</td>
+            {cols.grid && <td class="num opt">{e.grid ?? '—'}</td>}
+            {cols.stops && <td class="num opt">{e.stops ?? '—'}</td>}
             {cols.best && (
-              <td class="num">
+              <td class="num opt">
                 {e.fastestLap ? <span class="badge fl" title="Fastest lap">{e.best}</span> : (e.best ?? '—')}
               </td>
             )}
-            {cols.time && <td class="num">{e.time ?? (e.status === 'finished' ? '—' : e.status.toUpperCase())}</td>}
-            <td class="num">{e.points}</td>
+            {cols.time && <td class="num time">{e.time ?? (e.status === 'finished' ? '—' : e.status.toUpperCase())}</td>}
+            <td class="num pts">{e.points || ''}</td>
           </tr>
         ))
       }
     </tbody>
   </table>
 </div>
+
+<style>
+  .pos {
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    width: 3em;
+  }
+  .pts {
+    font-weight: 700;
+  }
+  .sub {
+    display: none;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted);
+    margin: 2px 0 0 14px;
+    white-space: normal;
+  }
+  .sub .badge {
+    margin-left: 4px;
+  }
+  /* Wider than the global phone breakpoint: the full table needs ~760px. */
+  @media (max-width: 760px) {
+    .opt {
+      display: none;
+    }
+    .sub {
+      display: block;
+    }
+    .driver {
+      white-space: normal;
+    }
+    .time {
+      font-size: 0.85rem;
+    }
+  }
+</style>

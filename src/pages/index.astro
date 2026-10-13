@@ -1,205 +1,240 @@
 ---
 import Base from '../layouts/Base.astro';
-import DriverName from '../components/DriverName.astro';
+import NumberPlate from '../components/NumberPlate.astro';
+import FormChips from '../components/FormChips.astro';
+import RaceCard from '../components/RaceCard.astro';
 import PointsChart from '../components/PointsChart.astro';
+import ConstructorBars from '../components/ConstructorBars.astro';
 import {
   getLeague,
   driverStandings,
   constructorStandings,
   progression,
-  mainSession,
-  entryFor,
-  positionLabel,
-  raceDate,
-  formatDate,
+  form,
   url,
 } from '../lib/league';
 
 const league = await getLeague();
 const standings = driverStandings(league);
 const constructors = constructorStandings(league);
-const leader = standings[0]?.points ?? 0;
+const leader = standings[0];
+const gap = leader && standings[1] ? leader.points - standings[1].points : 0;
 const latest = league.done.at(-1);
-const next = league.calendar.find((r) => !r.done);
-const latestSession = latest && mainSession(latest);
+// We race two rounds a week, so show the last two and the next two.
+const recent = league.done.slice(-2);
+const upcoming = league.calendar.filter((r) => !r.done).slice(0, 2);
 ---
 
 <Base>
-  <h1>2026 Season</h1>
-  <p class="muted lede">
-    Round {league.done.length} of {league.calendar.length}
-    {next && <> · Next up: <strong>R{next.round} {next.name}</strong></>}
-  </p>
-
-  <div class="grid-2">
-    <section>
-      <h2>Drivers' championship</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="num">Pos</th>
-              <th>Driver</th>
-              <th class="num">Wins</th>
-              <th class="num">Pod.</th>
-              <th class="num">Pts</th>
-              <th class="num">Gap</th>
-            </tr>
-          </thead>
-          <tbody>
-            {
-              standings.map((s, i) => (
-                <tr>
-                  <td class="num">{i + 1}</td>
-                  <td>
-                    <DriverName driver={s.driver} />
-                    <span class="muted team hide-sm">{s.driver.team.short}</span>
-                  </td>
-                  <td class="num">{s.wins}</td>
-                  <td class="num">{s.podiums}</td>
-                  <td class="num pts">{s.points}</td>
-                  <td class="num muted">{i === 0 ? '' : `−${leader - s.points}`}</td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    {
-      latest && latestSession && (
-        <section>
-          <h2>Latest race</h2>
-          <div class="card">
-            <div class="latest-head">
-              <a href={url(`races/${latest.id}/`)}>
-                <strong>
-                  R{latest.round} · {latest.name}
-                </strong>
-              </a>
-              <span class="muted">{formatDate(raceDate(latest))}</span>
-            </div>
-            <ol>
-              {league.drivers
-                .map((d) => ({ d, e: entryFor(latestSession, d) }))
-                .sort((a, b) => (a.e?.pos ?? a.e?.posMin ?? 99) - (b.e?.pos ?? b.e?.posMin ?? 99))
-                .map(({ d, e }) => (
-                  <li>
-                    <span class="num pos">{positionLabel(e)}</span>
-                    <DriverName driver={d} name={d.name} />
-                    <span class="num muted">{e?.points ?? 0} pts</span>
-                  </li>
-                ))}
-            </ol>
-            <a class="more" href={url(`races/${latest.id}/`)}>
-              Full result →
-            </a>
-          </div>
-        </section>
-      )
-    }
+  <div class="headline slide-in">
+    <p class="kicker">2026 season · after round {league.done.length} of {league.calendar.length}</p>
+    <h1>
+      {
+        !latest ? (
+          <>Lights out soon</>
+        ) : gap === 0 ? (
+          <>
+            {standings[0].driver.name} &amp; {standings[1].driver.name} level on {leader.points}
+          </>
+        ) : (
+          <>
+            <span style={`color: ${leader.driver.team.color}`}>{leader.driver.name}</span> leads by {gap}
+          </>
+        )
+      }
+    </h1>
   </div>
 
   <section>
-    <h2>Points progression</h2>
-    <PointsChart rounds={league.done} series={progression(league)} />
+    <h2>Drivers' championship</h2>
+    <ol class="tower">
+      {
+        standings.map((s, i) => (
+          <li class="slide-in" style={`--team: ${s.driver.team.color}; --i: ${i + 1}`}>
+            <span class="pos">{i + 1}</span>
+            <a class="who" href={url(`drivers/${s.driver.id}/`)}>
+              <NumberPlate driver={s.driver} />
+              <span class="name">{s.driver.name}</span>
+              <span class="team">{s.driver.team.short}</span>
+            </a>
+            <span class="form-cell">
+              <FormChips items={form(league, s.driver)} />
+            </span>
+            <span class="pts">
+              {s.points}
+              <small>pts</small>
+            </span>
+            <span class="gap">{i === 0 ? 'Leader' : `−${leader.points - s.points}`}</span>
+          </li>
+        ))
+      }
+    </ol>
   </section>
+
+  {
+    recent.length > 0 && (
+      <section>
+        <h2>Last race{recent.length > 1 && 's'}</h2>
+        <div class="grid-2">
+          {recent.map((r) => (
+            <RaceCard round={r} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <section>
+    <h2>Up next</h2>
+    {
+      upcoming.length > 0 ? (
+        <div class="grid-2">
+          {upcoming.map((r) => (
+            <RaceCard round={r} />
+          ))}
+        </div>
+      ) : (
+        <p class="panel display">Season complete · {leader?.driver.name} is champion</p>
+      )
+    }
+  </section>
+
+  {
+    latest && (
+      <section>
+        <h2>Points progression</h2>
+        <PointsChart rounds={league.done} series={progression(league)} />
+      </section>
+    )
+  }
 
   <section>
     <h2>Constructors' championship</h2>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="num">Pos</th>
-            <th>Team</th>
-            <th class="num">Pts</th>
-            <th>Points by driver</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            constructors.map((c, i) => {
-              const human = league.drivers.find((d) => d.team.id === c.team.id);
-              return (
-                <tr class:list={{ human: !!human }} style={`--team: ${c.team.color}`}>
-                  <td class="num">{i + 1}</td>
-                  <td>
-                    <span class="team-bar" />
-                    {c.team.short}
-                  </td>
-                  <td class="num pts">{c.points}</td>
-                  <td class="muted contrib">
-                    {[...c.drivers.entries()]
-                      .filter(([, p]) => p > 0)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([name, p]) => `${name} ${p}`)
-                      .join(' · ') || '—'}
-                  </td>
-                </tr>
-              );
-            })
-          }
-        </tbody>
-      </table>
-    </div>
-    <p class="muted note">Every car counts, AI teammates included, as in the game.</p>
+    <ConstructorBars league={league} standings={constructors} />
   </section>
 </Base>
 
 <style>
-  .lede {
-    margin-top: -0.4em;
-    margin-bottom: 24px;
+  .headline {
+    margin-bottom: 30px;
   }
-  .team {
-    font-size: 0.85em;
-    margin-left: 6px;
+  .headline h1 {
+    margin: 0;
   }
-  .pts {
-    font-weight: 700;
-  }
-  .latest-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  ol {
+
+  /* Timing tower */
+  .tower {
     list-style: none;
+    margin: 0;
     padding: 0;
-    margin: 12px 0;
-  }
-  li {
     display: grid;
-    grid-template-columns: 3.2em 1fr auto;
-    align-items: center;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
+    gap: 4px;
   }
-  li:last-child {
-    border-bottom: none;
+  .tower li {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr) auto 5.5rem 4.5rem;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    padding-right: 16px;
+    min-height: 58px;
+  }
+  .tower li:first-child {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--team) 22%, var(--surface)), var(--surface) 70%);
   }
   .pos {
-    text-align: left;
-    font-weight: 700;
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    color: #000;
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 1.5rem;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
   }
-  .latest-head a,
-  .more {
+  .who {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
     text-decoration: none;
   }
-  .more {
-    font-size: 0.9rem;
-    color: var(--accent);
+  .name {
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .who:hover .name {
+    color: var(--team);
+  }
+  .team {
+    color: var(--muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .pts {
+    text-align: right;
+    font-stretch: 125%;
+    font-weight: 800;
+    font-size: 1.5rem;
+  }
+  .pts small {
+    font-size: 0.55rem;
+    color: var(--muted);
+    margin-left: 2px;
+    text-transform: uppercase;
+  }
+  .gap {
+    text-align: right;
+    color: var(--muted);
     font-weight: 600;
   }
-  .contrib {
-    white-space: normal;
-    min-width: 9em;
-    font-size: 0.88rem;
+  .tower li:first-child .gap {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
-  .note {
-    font-size: 0.85rem;
+  @media (max-width: 720px) {
+    .tower li {
+      grid-template-columns: 2.6rem minmax(0, 1fr) auto auto;
+      grid-template-areas: 'pos who pts gap' 'pos form form form';
+      gap: 4px 10px;
+      padding: 0 12px 0 0;
+    }
+    .pos {
+      grid-area: pos;
+      font-size: 1.25rem;
+    }
+    .who {
+      grid-area: who;
+      padding-top: 8px;
+    }
+    .form-cell {
+      grid-area: form;
+      padding-bottom: 8px;
+    }
+    .pts {
+      grid-area: pts;
+      font-size: 1.25rem;
+      padding-top: 8px;
+    }
+    .gap {
+      grid-area: gap;
+      min-width: 2.6em;
+      padding-top: 8px;
+    }
+    .name {
+      font-size: 1.05rem;
+    }
+    .team {
+      display: none;
+    }
   }
 </style>

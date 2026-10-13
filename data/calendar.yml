@@ -1,26 +1,27 @@
 # Original 2026 F1 calendar. `date` is the real-world race date; the date the league raced
-# it lives in the round file. `id` is the URL slug of the race page.
-- { id: australia, round: 1, name: Australian Grand Prix, circuit: Albert Park, country: Australia, date: 2026-03-08 }
-- { id: china, round: 2, name: Chinese Grand Prix, circuit: Shanghai International Circuit, country: China, date: 2026-03-15, sprint: true }
-- { id: japan, round: 3, name: Japanese Grand Prix, circuit: Suzuka, country: Japan, date: 2026-03-29 }
-- { id: bahrain, round: 4, name: Bahrain Grand Prix, circuit: Bahrain International Circuit, country: Bahrain, date: 2026-04-12 }
-- { id: saudi-arabia, round: 5, name: Saudi Arabian Grand Prix, circuit: Jeddah Corniche Circuit, country: Saudi Arabia, date: 2026-04-19 }
-- { id: miami, round: 6, name: Miami Grand Prix, circuit: Miami International Autodrome, country: USA, date: 2026-05-03, sprint: true }
-- { id: canada, round: 7, name: Canadian Grand Prix, circuit: Circuit Gilles Villeneuve, country: Canada, date: 2026-05-24, sprint: true }
-- { id: monaco, round: 8, name: Monaco Grand Prix, circuit: Circuit de Monaco, country: Monaco, date: 2026-06-07 }
-- { id: barcelona, round: 9, name: Barcelona-Catalunya Grand Prix, circuit: Circuit de Barcelona-Catalunya, country: Spain, date: 2026-06-14 }
-- { id: austria, round: 10, name: Austrian Grand Prix, circuit: Red Bull Ring, country: Austria, date: 2026-06-28 }
-- { id: great-britain, round: 11, name: British Grand Prix, circuit: Silverstone, country: United Kingdom, date: 2026-07-05, sprint: true }
-- { id: belgium, round: 12, name: Belgian Grand Prix, circuit: Spa-Francorchamps, country: Belgium, date: 2026-07-19 }
-- { id: hungary, round: 13, name: Hungarian Grand Prix, circuit: Hungaroring, country: Hungary, date: 2026-07-26 }
-- { id: netherlands, round: 14, name: Dutch Grand Prix, circuit: Zandvoort, country: Netherlands, date: 2026-08-23, sprint: true }
-- { id: italy, round: 15, name: Italian Grand Prix, circuit: Monza, country: Italy, date: 2026-09-06 }
-- { id: madrid, round: 16, name: Spanish Grand Prix, circuit: Madring, country: Spain, date: 2026-09-13 }
-- { id: azerbaijan, round: 17, name: Azerbaijan Grand Prix, circuit: Baku City Circuit, country: Azerbaijan, date: 2026-09-26 }
-- { id: singapore, round: 18, name: Singapore Grand Prix, circuit: Marina Bay, country: Singapore, date: 2026-10-11, sprint: true }
-- { id: united-states, round: 19, name: United States Grand Prix, circuit: Circuit of the Americas, country: USA, date: 2026-10-25 }
-- { id: mexico, round: 20, name: Mexico City Grand Prix, circuit: Autódromo Hermanos Rodríguez, country: Mexico, date: 2026-11-01 }
-- { id: brazil, round: 21, name: São Paulo Grand Prix, circuit: Interlagos, country: Brazil, date: 2026-11-08 }
-- { id: las-vegas, round: 22, name: Las Vegas Grand Prix, circuit: Las Vegas Strip Circuit, country: USA, date: 2026-11-21 }
-- { id: qatar, round: 23, name: Qatar Grand Prix, circuit: Lusail International Circuit, country: Qatar, date: 2026-11-29 }
-- { id: abu-dhabi, round: 24, name: Abu Dhabi Grand Prix, circuit: Yas Marina, country: UAE, date: 2026-12-06 }
+# it lives in the round file. `id` is the URL slug of the race page. `track` is the circuit
+# outline in data/tracks/ (from bacinger/f1-circuits); its first two letters are the flag code.
+- { id: australia, round: 1, name: Australian Grand Prix, circuit: Albert Park, country: Australia, date: 2026-03-08, track: au-1953 }
+- { id: china, round: 2, name: Chinese Grand Prix, circuit: Shanghai International Circuit, country: China, date: 2026-03-15, sprint: true, track: cn-2004 }
+- { id: japan, round: 3, name: Japanese Grand Prix, circuit: Suzuka, country: Japan, date: 2026-03-29, track: jp-1962 }
+- { id: bahrain, round: 4, name: Bahrain Grand Prix, circuit: Bahrain International Circuit, country: Bahrain, date: 2026-04-12, track: bh-2002 }
+- { id: saudi-arabia, round: 5, name: Saudi Arabian Grand Prix, circuit: Jeddah Corniche Circuit, country: Saudi Arabia, date: 2026-04-19, track: sa-2021 }
+- { id: miami, round: 6, name: Miami Grand Prix, circuit: Miami International Autodrome, country: USA, date: 2026-05-03, sprint: true, track: us-2022 }
+- { id: canada, round: 7, name: Canadian Grand Prix, circuit: Circuit Gilles Villeneuve, country: Canada, date: 2026-05-24, sprint: true, track: ca-1978 }
+- { id: monaco, round: 8, name: Monaco Grand Prix, circuit: Circuit de Monaco, country: Monaco, date: 2026-06-07, track: mc-1929 }
+- { id: barcelona, round: 9, name: Barcelona-Catalunya Grand Prix, circuit: Circuit de Barcelona-Catalunya, country: Spain, date: 2026-06-14, track: es-1991 }
+- { id: austria, round: 10, name: Austrian Grand Prix, circuit: Red Bull Ring, country: Austria, date: 2026-06-28, track: at-1969 }
+- { id: great-britain, round: 11, name: British Grand Prix, circuit: Silverstone, country: United Kingdom, date: 2026-07-05, sprint: true, track: gb-1948 }
+- { id: belgium, round: 12, name: Belgian Grand Prix, circuit: Spa-Francorchamps, country: Belgium, date: 2026-07-19, track: be-1925 }
+- { id: hungary, round: 13, name: Hungarian Grand Prix, circuit: Hungaroring, country: Hungary, date: 2026-07-26, track: hu-1986 }
+- { id: netherlands, round: 14, name: Dutch Grand Prix, circuit: Zandvoort, country: Netherlands, date: 2026-08-23, sprint: true, track: nl-1948 }
+- { id: italy, round: 15, name: Italian Grand Prix, circuit: Monza, country: Italy, date: 2026-09-06, track: it-1922 }
+- { id: madrid, round: 16, name: Spanish Grand Prix, circuit: Madring, country: Spain, date: 2026-09-13, track: es-2026 }
+- { id: azerbaijan, round: 17, name: Azerbaijan Grand Prix, circuit: Baku City Circuit, country: Azerbaijan, date: 2026-09-26, track: az-2016 }
+- { id: singapore, round: 18, name: Singapore Grand Prix, circuit: Marina Bay, country: Singapore, date: 2026-10-11, sprint: true, track: sg-2008 }
+- { id: united-states, round: 19, name: United States Grand Prix, circuit: Circuit of the Americas, country: USA, date: 2026-10-25, track: us-2012 }
+- { id: mexico, round: 20, name: Mexico City Grand Prix, circuit: Autódromo Hermanos Rodríguez, country: Mexico, date: 2026-11-01, track: mx-1962 }
+- { id: brazil, round: 21, name: São Paulo Grand Prix, circuit: Interlagos, country: Brazil, date: 2026-11-08, track: br-1940 }
+- { id: las-vegas, round: 22, name: Las Vegas Grand Prix, circuit: Las Vegas Strip Circuit, country: USA, date: 2026-11-21, track: us-2023 }
+- { id: qatar, round: 23, name: Qatar Grand Prix, circuit: Lusail International Circuit, country: Qatar, date: 2026-11-29, track: qa-2004 }
+- { id: abu-dhabi, round: 24, name: Abu Dhabi Grand Prix, circuit: Yas Marina, country: UAE, date: 2026-12-06, track: ae-2009 }

@@ -15,6 +15,7 @@ const drivers = defineCollection({
   loader: file('./data/drivers.yml'),
   schema: z.object({
     name: z.string(),
+    number: z.number().int(),
     gamertag: z.string(),
     aliases: z.array(z.string()).default([]),
     team: z.string(),
@@ -30,6 +31,7 @@ const calendar = defineCollection({
     country: z.string(),
     date: z.coerce.date(),
     sprint: z.boolean().default(false),
+    track: z.string(),
   }),
 });
 

@@ -17,6 +17,7 @@ export interface Team {
 export interface Driver {
   id: string;
   name: string;
+  number: number;
   gamertag: string;
   aliases: string[];
   team: Team;
@@ -69,6 +70,10 @@ export interface Round {
   country: string;
   realDate: Date;
   sprint: boolean;
+  /** Circuit outline id in data/tracks/. */
+  track: string;
+  /** Flag code (public/flags/<flag>.svg). */
+  flag: string;
   /** Empty until the league has raced it. */
   sessions: Session[];
   done: boolean;
@@ -257,6 +262,7 @@ async function buildLeague(): Promise<League> {
         id: c.id,
         ...c.data,
         realDate: c.data.date,
+        flag: c.data.track.slice(0, 2),
         sessions,
         done: sessions.length > 0,
       };
@@ -299,6 +305,8 @@ export interface DriverStats {
   fastestLaps: number;
   bestFinish?: number;
   avgFinish?: number;
+  /** Average grid slot over the races where the grid is known. */
+  avgGrid?: number;
   positionsGained: number;
   warnings: number;
   penalties: number;
@@ -322,6 +330,7 @@ export function driverStats(league: League, driver: Driver): DriverStats {
     finishes: [],
   };
   const finishPositions: number[] = [];
+  const grids: number[] = [];
 
   for (const round of league.done) {
     for (const session of round.sessions) {
@@ -336,6 +345,7 @@ export function driverStats(league: League, driver: Driver): DriverStats {
       s.starts++;
       if (e.status === 'dnf' || e.status === 'dsq') s.dnfs++;
       if (e.fastestLap) s.fastestLaps++;
+      if (e.grid) grids.push(e.grid);
       if (e.status === 'finished' && e.pos) {
         finishPositions.push(e.pos);
         s.finishes[e.pos] = (s.finishes[e.pos] ?? 0) + 1;
@@ -355,6 +365,7 @@ export function driverStats(league: League, driver: Driver): DriverStats {
     s.bestFinish = Math.min(...finishPositions);
     s.avgFinish = finishPositions.reduce((a, b) => a + b, 0) / finishPositions.length;
   }
+  if (grids.length) s.avgGrid = grids.reduce((a, b) => a + b, 0) / grids.length;
   return s;
 }
 
@@ -403,6 +414,56 @@ export function progression(league: League): { driver: Driver; points: number[] 
     let total = 0;
     return { driver, points: league.done.map((r) => (total += roundPoints(r, driver))) };
   });
+}
+
+/** The driver's main-session entry in each of the last `n` completed rounds, oldest first. */
+export function form(league: League, driver: Driver, n = 5): { round: Round; entry?: Entry }[] {
+  return league.done.slice(-n).map((round) => {
+    const s = mainSession(round);
+    return { round, entry: s && entryFor(s, driver) };
+  });
+}
+
+export interface HeadToHead {
+  opponent: Driver;
+  wins: number;
+  losses: number;
+}
+
+/**
+ * Race-by-race record against each other league driver: whoever is classified higher wins.
+ * Entries are already in classification order (finishers, then DNF, then DNS), so a finisher
+ * beats a retirement. Races where neither started don't count.
+ */
+export function headToHead(league: League, driver: Driver): HeadToHead[] {
+  return league.drivers
+    .filter((d) => d.id !== driver.id)
+    .map((opponent) => {
+      const h: HeadToHead = { opponent, wins: 0, losses: 0 };
+      for (const round of league.done) {
+        for (const s of round.sessions) {
+          if (s.type !== 'race') continue;
+          const rank = (d: Driver) => {
+            const i = s.entries.findIndex((e) => e.driver?.id === d.id);
+            return i === -1 || s.entries[i].status === 'dns' ? Infinity : i;
+          };
+          const a = rank(driver);
+          const b = rank(opponent);
+          if (a === b) continue;
+          if (a < b) h.wins++;
+          else h.losses++;
+        }
+      }
+      return h;
+    });
+}
+
+/** Black or white, whichever reads better on the given team colour. */
+export function onColor(hex: string): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const lum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return lum > 0.18 ? '#000' : '#fff';
 }
 
 export function positionLabel(e: Entry | undefined): string {

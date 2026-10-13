@@ -1,0 +1,48 @@
+---
+import { onColor, type Driver } from '../lib/league';
+
+interface Props {
+  driver: Driver;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const { driver, size = 'md' } = Astro.props;
+---
+
+<span class:list={['plate', size]} style={`--team: ${driver.team.color}; --on: ${onColor(driver.team.color)}`} title={`#${driver.number}`}>
+  {driver.number}
+</span>
+
+<style>
+  .plate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    background: var(--team);
+    color: var(--on);
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    line-height: 1;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 0.35em) 100%, 0 100%);
+  }
+  .sm {
+    font-size: 0.75rem;
+    min-width: 2.4em;
+    height: 1.7em;
+    padding-right: 0.25em;
+  }
+  .md {
+    font-size: 1.05rem;
+    min-width: 2.5em;
+    height: 1.9em;
+    padding-right: 0.3em;
+  }
+  .lg {
+    font-size: clamp(2.6rem, 9vw, 4.2rem);
+    min-width: 1.9em;
+    height: 1.45em;
+    padding-right: 0.3em;
+  }
+</style>

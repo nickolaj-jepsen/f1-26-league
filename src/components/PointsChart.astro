@@ -10,7 +10,7 @@ const { rounds, series } = Astro.props;
 
 const W = 520;
 const H = 300;
-const pad = { top: 16, right: 100, bottom: 30, left: 34 };
+const pad = { top: 16, right: 128, bottom: 30, left: 34 };
 const plotW = W - pad.left - pad.right;
 const plotH = H - pad.top - pad.bottom;
 
@@ -40,7 +40,7 @@ for (let i = 1; i < labels.length; i++) {
 }
 ---
 
-<figure class="card chart">
+<figure class="panel chart">
   <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Cumulative points by round">
     {
       ticks.map((t) => (
@@ -82,7 +82,7 @@ for (let i = 1; i < labels.length; i++) {
 <style>
   .chart {
     margin: 0;
-    padding: 12px 8px 4px;
+    padding: 14px 8px 6px;
   }
   svg {
     display: block;
@@ -90,7 +90,7 @@ for (let i = 1; i < labels.length; i++) {
     height: auto;
   }
   .grid {
-    stroke: var(--border);
+    stroke: var(--line);
     stroke-width: 1;
   }
   .axis {
@@ -100,7 +100,7 @@ for (let i = 1; i < labels.length; i++) {
   .line {
     fill: none;
     stroke: var(--c);
-    stroke-width: 2.5;
+    stroke-width: 3;
     stroke-linejoin: round;
     stroke-linecap: round;
   }
@@ -110,12 +110,17 @@ for (let i = 1; i < labels.length; i++) {
     stroke-width: 1.5;
   }
   .label {
-    fill: var(--text);
+    fill: var(--c);
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
+    font-style: italic;
+    font-stretch: 125%;
+    text-transform: uppercase;
   }
   .label .pts {
-    fill: var(--muted);
-    font-weight: 400;
+    fill: var(--text);
+    font-style: normal;
+    font-stretch: 100%;
+    font-weight: 600;
   }
 </style>

@@ -1,56 +1,69 @@
 ---
 import Base from '../layouts/Base.astro';
-import DriverName from '../components/DriverName.astro';
-import { getLeague, mainSession, raceDate, formatDate, url } from '../lib/league';
+import TrackMap from '../components/TrackMap.astro';
+import Flag from '../components/Flag.astro';
+import { getLeague, mainSession, entryFor, positionLabel, raceDate, formatDate, url } from '../lib/league';
 
 const league = await getLeague();
 const nextId = league.calendar.find((r) => !r.done)?.id;
+
+const tiles = league.calendar.map((r) => {
+  const s = mainSession(r);
+  const winner = s?.entries.find((e) => e.pos === 1);
+  const results = s
+    ? league.drivers
+        .map((d) => ({ d, e: entryFor(s, d) }))
+        .sort((a, b) => (a.e?.pos ?? a.e?.posMin ?? 99) - (b.e?.pos ?? b.e?.posMin ?? 99))
+    : [];
+  return { r, s, winner, results, state: r.done ? 'done' : r.id === nextId ? 'next' : 'upcoming' };
+});
 ---
 
 <Base title="Calendar">
+  <p class="kicker">2026 season</p>
   <h1>Calendar</h1>
   <p class="muted lede">{league.done.length} of {league.calendar.length} rounds raced</p>
 
-  <ol class="rounds">
+  <!-- Tiles contain no inner links, so a whole tile can be one link. -->
+  <ol class="tiles">
     {
-      league.calendar.map((r) => {
-        const s = mainSession(r);
-        const winner = s?.entries.find((e) => e.pos === 1);
-        const inner = (
+      tiles.map(({ r, s, winner, results, state }) => {
+        const body = (
           <>
-            <span class="round">R{r.round}</span>
-            <span class="info">
-              <strong>{r.name}</strong>
-              <span class="muted small">
-                {r.circuit}
-                {r.sprint && ' · sprint weekend'}
-              </span>
+            <span class="top">
+              <span class="rnd">R{r.round}</span>
+              <Flag code={r.flag} label={r.country} />
+              <span class="country">{r.country}</span>
+              {state === 'next' && <span class="badge red">Next</span>}
             </span>
-            <span class="result">
-              {r.done ? (
+            <span class="map">
+              <TrackMap track={r.track} />
+            </span>
+            <span class="info">
+              <span class="gp">{r.name}</span>
+              <span class="circuit">{r.circuit}</span>
+              {state === 'done' && (
                 <>
-                  {winner && <DriverName entry={winner} />}
-                  <span class="muted small">
-                    {formatDate(raceDate(r))} <span class="badge">{s?.source === 'csv' ? 'export' : 'screenshot'}</span>
+                  <span class="results">
+                    {results.map(({ d, e }) => (
+                      <span class="res" style={`--team: ${d.team.color}`}>
+                        <b>{positionLabel(e)}</b> {d.name}
+                      </span>
+                    ))}
+                  </span>
+                  <span class="foot">
+                    {winner && !winner.driver && <span>Won by {winner.name} · </span>}
+                    {formatDate(raceDate(r))}
+                    <span class="badge">{s?.source === 'csv' ? 'export' : 'screenshot'}</span>
                   </span>
                 </>
-              ) : r.id === nextId ? (
-                <span class="badge next">Next</span>
-              ) : (
-                <span class="muted small">Upcoming</span>
               )}
             </span>
           </>
         );
         return (
-          <li class:list={{ done: r.done }}>
-            {r.done ? (
-              <a class="row" href={url(`races/${r.id}/`)}>
-                {inner}
-              </a>
-            ) : (
-              <div class="row">{inner}</div>
-            )}
+          <li class:list={['tile', state]} style={winner && `--track: ${winner.team.color}`}>
+            {state === 'done' ? <a href={url(`races/${r.id}/`)}>{body}</a> : <div>{body}</div>}
           </li>
         );
       })
@@ -59,55 +72,130 @@ const nextId = league.calendar.find((r) => !r.done)?.id;
 </Base>
 
 <style>
+  h1 {
+    margin-bottom: 4px;
+  }
   .lede {
-    margin-top: -0.4em;
+    margin: 0 0 24px;
   }
-  .rounds {
+  .tiles {
     list-style: none;
-    padding: 0;
     margin: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-  li + li {
-    border-top: 1px solid var(--border);
-  }
-  .row {
+    padding: 0;
     display: grid;
-    grid-template-columns: 2.6em 1fr auto;
-    gap: 12px;
-    align-items: center;
-    padding: 10px 14px;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  }
+  .tile > a,
+  .tile > div {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    grid-template-areas: 'top top' 'map info';
+    gap: 10px 16px;
+    height: 100%;
+    padding: 14px 16px 16px;
+    background: var(--surface);
     text-decoration: none;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%);
+    --track-w: 7;
   }
-  li:not(.done) .row {
-    opacity: 0.7;
-  }
-  a.row:hover {
+  .tile > a:hover {
     background: var(--surface-2);
   }
-  .round {
-    font-weight: 900;
-    font-style: italic;
+  .top {
+    grid-area: top;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-stretch: 125%;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     color: var(--muted);
   }
-  .info,
-  .result {
+  .rnd {
+    font-weight: 800;
+    font-style: italic;
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  .top .badge {
+    margin-left: auto;
+  }
+  .map {
+    grid-area: map;
+    height: 80px;
+    align-self: center;
+  }
+  .info {
+    grid-area: info;
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
-  .result {
-    align-items: flex-end;
-    text-align: right;
+  .gp {
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    line-height: 1.15;
   }
-  .small {
-    font-size: 0.85rem;
+  .circuit {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 8px;
   }
-  .badge.next {
-    background: var(--accent);
-    color: #fff;
+  .results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 10px;
+    font-size: 0.82rem;
+  }
+  .res {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-left: 3px solid var(--team);
+    padding-left: 6px;
+  }
+  .res b {
+    font-stretch: 112%;
+    font-style: italic;
+    display: inline-block;
+    min-width: 2.6em;
+  }
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* The next round stands out; upcoming ones recede. */
+  .next {
+    grid-column: 1 / -1;
+  }
+  .next > div {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 20%, var(--surface)), var(--surface) 60%);
+    grid-template-columns: 150px 1fr;
+    --track: var(--accent);
+  }
+  .next .map {
+    height: 110px;
+  }
+  .next .gp {
+    font-size: 1.5rem;
+  }
+  .upcoming > div {
+    --track: var(--dim);
+  }
+  .upcoming .gp,
+  .upcoming .rnd {
+    color: var(--muted);
   }
 </style>

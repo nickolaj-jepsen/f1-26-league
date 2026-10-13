@@ -1,0 +1,12 @@
+---
+import { url } from '../lib/league';
+
+interface Props {
+  code: string;
+  label?: string;
+}
+
+const { code, label = '' } = Astro.props;
+---
+
+<img class="flag" src={url(`flags/${code}.svg`)} alt={label} width="21" height="16" loading="lazy" decoding="async" />

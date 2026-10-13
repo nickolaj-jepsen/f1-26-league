@@ -3,7 +3,10 @@ import { Image } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import Classification from '../../components/Classification.astro';
 import DriverName from '../../components/DriverName.astro';
-import { getLeague, entryFor, positionLabel, formatDate, url, type Round } from '../../lib/league';
+import NumberPlate from '../../components/NumberPlate.astro';
+import TrackMap from '../../components/TrackMap.astro';
+import Flag from '../../components/Flag.astro';
+import { getLeague, entryFor, positionLabel, formatDate, mainSession, url, type Round } from '../../lib/league';
 
 export async function getStaticPaths() {
   const league = await getLeague();
@@ -20,162 +23,425 @@ const idx = league.done.findIndex((r) => r.id === round.id);
 const prev = league.done[idx - 1];
 const next = league.done[idx + 1];
 const sessionTitle = { race: 'Race', sprint: 'Sprint', qualifying: 'Qualifying' };
+const main = mainSession(round);
+const winner = main?.entries.find((e) => e.pos === 1);
+const date = round.sessions.find((s) => s.date)?.date;
 ---
 
 <Base title={round.name}>
-  <p class="muted kicker">Round {round.round} · {round.circuit}</p>
-  <h1>{round.name}</h1>
+  <header class="hero" style={winner && `--track: ${winner.team.color}`}>
+    <div class="map-wrap">
+      <TrackMap track={round.track} draw label={`${round.circuit} layout`} />
+    </div>
+    <div class="intro slide-in">
+      <p class="kicker">
+        Round {round.round} of {league.calendar.length} · <Flag code={round.flag} label={round.country} />
+        {round.country}
+      </p>
+      <h1>{round.name}</h1>
+      <p class="muted circuit">{round.circuit}</p>
+      <p class="meta">
+        {date && <span>{formatDate(date)}</span>}
+        <span class="badge">{main?.source === 'csv' ? 'From export' : 'From screenshot'}</span>
+      </p>
+      {
+        winner && (
+          <p class="winner">
+            <span class="kicker">Winner</span>
+            {winner.driver ? <NumberPlate driver={winner.driver} size="sm" /> : <span class="team-bar" style={`--team: ${winner.team.color}`} />}
+            <strong>{winner.name}</strong>
+            <span class="muted">{winner.team.short}</span>
+          </p>
+        )
+      }
+    </div>
+  </header>
 
   {
-    round.sessions.map((s) => (
-      <section>
-        {round.sessions.length > 1 && <h2>{sessionTitle[s.type]}</h2>}
-        <p class="muted meta">
-          {s.date && formatDate(s.date)}
-          <span class="badge">{s.source === 'csv' ? 'from export' : 'from screenshot'}</span>
-        </p>
+    round.sessions.map((s) => {
+      const rows = league.drivers
+        .map((d) => ({
+          d,
+          e: entryFor(s, d),
+          pens: s.incidents.filter((i) => i.driver?.id === d.id && i.penalty !== 'Warning' && i.penalty !== 'DNF').length,
+        }))
+        .sort((a, b) => (a.e?.pos ?? a.e?.posMin ?? 99) - (b.e?.pos ?? b.e?.posMin ?? 99));
+      return (
+        <>
+          {round.sessions.length > 1 && <h2 class="session-title">{sessionTitle[s.type]}</h2>}
 
-        <div class="league">
-          {league.drivers
-            .map((d) => ({ d, e: entryFor(s, d) }))
-            .sort((a, b) => (a.e?.pos ?? a.e?.posMin ?? 99) - (b.e?.pos ?? b.e?.posMin ?? 99))
-            .map(({ d, e }) => (
-              <div class="stat" style={`--team: ${d.team.color}`}>
-                <div class="value">{positionLabel(e)}</div>
-                <div class="who">
-                  <DriverName driver={d} />
-                </div>
-                <div class="label">
-                  {e?.points ?? 0} pts
-                  {e?.grid && e.pos && e.status === 'finished' && ` · from P${e.grid}`}
-                  {e?.fastestLap && <span class="badge fl">FL</span>}
-                </div>
+          <section>
+            <h2>League result</h2>
+            <ol class="plates">
+              {rows.map(({ d, e, pens }, i) => {
+                const delta = e?.grid && e.pos && e.status === 'finished' ? e.grid - e.pos : undefined;
+                return (
+                  <li class="slide-in" style={`--team: ${d.team.color}; --i: ${i + 2}`}>
+                    <span class="ppos">{positionLabel(e)}</span>
+                    <a class="who" href={url(`drivers/${d.id}/`)}>
+                      <NumberPlate driver={d} size="sm" />
+                      <span class="name">{d.name}</span>
+                    </a>
+                    <span class="facts">
+                      {e?.grid && <span>Grid {e.grid}</span>}
+                      {delta !== undefined && delta !== 0 && (
+                        <span class:list={['delta', delta > 0 ? 'up' : 'down']}>
+                          {delta > 0 ? '▲' : '▼'}
+                          {Math.abs(delta)}
+                        </span>
+                      )}
+                      {e?.best && (e.fastestLap ? <span class="badge fl">FL {e.best}</span> : <span class="muted">{e.best}</span>)}
+                      {pens > 0 && (
+                        <span class="badge red">
+                          {pens} penalt{pens === 1 ? 'y' : 'ies'}
+                        </span>
+                      )}
+                    </span>
+                    <span class="ppts">
+                      {e?.points ?? 0}
+                      <small>pts</small>
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+            {s.notes && <p class="muted note">{s.notes}</p>}
+          </section>
+
+          {s.screenshots.length > 0 && (
+            <section>
+              <h2>Screenshot{s.screenshots.length > 1 && 's'}</h2>
+              <div class="shots">
+                {s.screenshots.map((img) => (
+                  <a href={img.src} target="_blank" rel="noopener" title="Open full size">
+                    <Image src={img} alt={`${round.name} result screenshot`} widths={[480, 960]} sizes="(min-width: 600px) 440px, 100vw" />
+                  </a>
+                ))}
               </div>
-            ))}
-        </div>
+            </section>
+          )}
 
-        {s.notes && <p class="muted note">{s.notes}</p>}
+          <section>
+            <h2>Classification</h2>
+            <Classification session={s} />
+          </section>
 
-        <h2>Classification</h2>
-        <Classification session={s} />
-
-        {s.incidents.length > 0 && (
-          <>
-            <h2 class="spaced">Incidents &amp; penalties</h2>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th class="num">Lap</th>
-                    <th class="num">Time</th>
-                    <th>Driver</th>
-                    <th>Incident</th>
-                    <th>Penalty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.incidents.map((i) => (
-                    <tr class:list={{ human: !!i.driver }} style={i.team && `--team: ${i.team.color}`}>
-                      <td class="num">{i.lap ?? '—'}</td>
-                      <td class="num muted">{i.time}</td>
-                      <td>
-                        <DriverName driver={i.driver} team={i.team} name={i.name} />
-                      </td>
-                      <td>{i.incident}</td>
-                      <td class:list={{ penalty: i.penalty !== 'Warning' }}>{i.penalty}</td>
+          {s.incidents.length > 0 && (
+            <section>
+              <h2>Incidents &amp; penalties</h2>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="num">Lap</th>
+                      <th class="num hide-sm">Time</th>
+                      <th>Driver</th>
+                      <th>Incident</th>
+                      <th>Penalty</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
-        {s.screenshots.length > 0 && (
-          <>
-            <h2 class="spaced">Screenshot{s.screenshots.length > 1 && 's'}</h2>
-            <div class="shots">
-              {s.screenshots.map((img) => (
-                <a href={img.src} target="_blank" rel="noopener">
-                  <Image src={img} alt={`${round.name} result screenshot`} widths={[640, 1280]} sizes="(min-width: 1040px) 1000px, 100vw" />
-                </a>
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-    ))
+                  </thead>
+                  <tbody>
+                    {s.incidents.map((i) => (
+                      <tr class:list={{ human: !!i.driver }} style={i.team && `--team: ${i.team.color}`}>
+                        <td class="num">{i.lap ?? '—'}</td>
+                        <td class="num muted hide-sm">{i.time}</td>
+                        <td>
+                          <DriverName driver={i.driver} team={i.team} name={i.name} />
+                        </td>
+                        <td class="wrap">{i.incident}</td>
+                        <td class:list={['wrap', { penalty: i.penalty !== 'Warning' }]}>{i.penalty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </>
+      );
+    })
   }
 
   <nav class="pager">
-    {prev ? <a href={url(`races/${prev.id}/`)}>← R{prev.round} {prev.name}</a> : <span />}
-    {next ? <a href={url(`races/${next.id}/`)}>R{next.round} {next.name} →</a> : <span />}
+    {
+      prev ? (
+        <a href={url(`races/${prev.id}/`)} class="prev">
+          <span class="pmap">
+            <TrackMap track={prev.track} />
+          </span>
+          <span>
+            <span class="kicker">← R{prev.round}</span>
+            <span class="pname">{prev.name}</span>
+          </span>
+        </a>
+      ) : (
+        <span />
+      )
+    }
+    {
+      next ? (
+        <a href={url(`races/${next.id}/`)} class="next">
+          <span>
+            <span class="kicker">R{next.round} →</span>
+            <span class="pname">{next.name}</span>
+          </span>
+          <span class="pmap">
+            <TrackMap track={next.track} />
+          </span>
+        </a>
+      ) : (
+        <span />
+      )
+    }
   </nav>
 </Base>
 
 <style>
-  .kicker {
-    margin: 0 0 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.85rem;
+  /* Hero */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 32px;
+    align-items: center;
+    margin-bottom: 36px;
+    --track-w: 4;
+  }
+  .map-wrap {
+    aspect-ratio: 4 / 3;
+    max-height: 340px;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--track, var(--text)) 10%, transparent), transparent 70%);
+  }
+  .map-wrap :global(svg) {
+    max-height: 300px;
+  }
+  .intro h1 {
+    margin: 0 0 6px;
+  }
+  .circuit {
+    margin: 0 0 10px;
   }
   .meta {
-    margin-top: -0.4em;
     display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .league {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 10px;
-    margin-bottom: 24px;
+    align-items: center;
+    margin: 0 0 16px;
+    font-weight: 600;
   }
-  .league .stat {
-    border-top: 3px solid var(--team);
+  .winner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    flex-wrap: wrap;
+  }
+  .winner .kicker {
+    margin: 0;
+  }
+  .winner strong {
+    font-stretch: 125%;
+    font-style: italic;
+    text-transform: uppercase;
+  }
+  @media (max-width: 700px) {
+    .hero {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .map-wrap {
+      max-height: 220px;
+      aspect-ratio: auto;
+      height: 220px;
+    }
+    .map-wrap :global(svg) {
+      max-height: 200px;
+    }
+  }
+
+  /* League plates */
+  .session-title {
+    margin-top: 40px;
+  }
+  .plates {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .plates li {
+    display: grid;
+    grid-template-columns: 4.2rem minmax(0, auto) 1fr auto;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    box-shadow: inset 4px 0 0 var(--team);
+    padding: 10px 16px 10px 0;
+  }
+  .ppos {
+    text-align: center;
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 1.3rem;
   }
   .who {
-    font-weight: 700;
-    margin: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
   }
-  .who :global(.team-bar) {
-    display: none;
+  .name {
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+  }
+  .who:hover .name {
+    color: var(--team);
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .delta {
+    font-weight: 700;
+  }
+  .delta.up {
+    color: #3ddc84;
+  }
+  .delta.down {
+    color: var(--accent);
+  }
+  .ppts {
+    font-stretch: 125%;
+    font-weight: 800;
+    font-size: 1.3rem;
+    text-align: right;
+  }
+  .ppts small {
+    font-size: 0.55rem;
+    color: var(--muted);
+    margin-left: 2px;
+    text-transform: uppercase;
+  }
+  @media (max-width: 600px) {
+    .plates li {
+      grid-template-columns: 3.4rem 1fr auto;
+      grid-template-areas: 'pos who pts' 'pos facts facts';
+      gap: 4px 10px;
+      padding-right: 12px;
+    }
+    .ppos {
+      grid-area: pos;
+      font-size: 1.1rem;
+    }
+    .who {
+      grid-area: who;
+    }
+    .facts {
+      grid-area: facts;
+      font-size: 0.78rem;
+    }
+    .facts:empty {
+      display: none;
+    }
+    .ppts {
+      grid-area: pts;
+      font-size: 1.1rem;
+    }
   }
   .note {
-    font-size: 0.9rem;
-    margin-top: -12px;
+    font-size: 0.88rem;
+    margin: 10px 0 0;
   }
-  .spaced {
-    margin-top: 28px;
+
+  /* Screenshots */
+  .shots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
   }
-  td.penalty {
-    color: var(--accent);
+  .shots a {
+    display: block;
+    width: min(440px, 100%);
+    position: relative;
+  }
+  .shots a::after {
+    content: 'Open full size ↗';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding: 4px 10px;
+    background: rgb(0 0 0 / 0.75);
+    font-size: 0.72rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
   .shots img {
     display: block;
     width: 100%;
     height: auto;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
+    border: 1px solid var(--line);
   }
-  .shots a + a {
-    display: block;
-    margin-top: 12px;
+
+  /* Incidents */
+  td.wrap {
+    white-space: normal;
+    min-width: 7em;
   }
+  td.penalty {
+    color: #ff4d4d;
+    font-weight: 600;
+  }
+
+  /* Pager */
   .pager {
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    margin-top: 36px;
-    font-weight: 600;
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    --track-w: 9;
+    --track: var(--muted);
   }
   .pager a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     text-decoration: none;
-    color: var(--muted);
+    min-width: 0;
+  }
+  .pager .next {
+    text-align: right;
+    margin-left: auto;
   }
   .pager a:hover {
-    color: var(--text);
+    --track: var(--text);
+  }
+  .pmap {
+    width: 48px;
+    height: 40px;
+    flex: none;
+  }
+  .pager .kicker {
+    display: block;
+    margin: 0;
+  }
+  .pname {
+    font-weight: 700;
+  }
+  @media (max-width: 480px) {
+    .pmap {
+      display: none;
+    }
   }
 </style>

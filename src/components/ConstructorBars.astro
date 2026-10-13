@@ -1,0 +1,136 @@
+---
+import type { League, TeamStanding } from '../lib/league';
+
+interface Props {
+  league: League;
+  standings: TeamStanding[];
+}
+
+const { league, standings } = Astro.props;
+const max = Math.max(1, ...standings.map((c) => c.points));
+
+const rows = standings.map((c, i) => {
+  const human = league.drivers.find((d) => d.team.id === c.team.id);
+  const humanPts = human ? (c.drivers.get(human.name) ?? 0) : 0;
+  const others = [...c.drivers.entries()].filter(([n, p]) => n !== human?.name && p > 0).sort((a, b) => b[1] - a[1]);
+  return {
+    pos: i + 1,
+    team: c.team,
+    points: c.points,
+    human,
+    humanPct: (humanPts / max) * 100,
+    aiPct: ((c.points - humanPts) / max) * 100,
+    split: [...(human ? [[human.name, humanPts] as const] : []), ...others].map(([n, p]) => `${n} ${p}`).join(' · '),
+  };
+});
+---
+
+<ol class="bars">
+  {
+    rows.map((r) => (
+      <li class:list={{ league: !!r.human }} style={`--team: ${r.team.color}`}>
+        <span class="pos">{r.pos}</span>
+        <span class="name">{r.team.short}</span>
+        <span class="track">
+          <span class="seg human" style={`width: ${r.humanPct}%`} />
+          <span class="seg ai" style={`width: ${r.aiPct}%`} />
+        </span>
+        <span class="pts">{r.points}</span>
+        <span class="split">{r.split || '—'}</span>
+      </li>
+    ))
+  }
+</ol>
+<p class="legend">
+  <span class="key human"></span> League driver <span class="key ai"></span> AI teammate · every car scores, as in the game
+</p>
+
+<style>
+  .bars {
+    list-style: none;
+    margin: 0;
+    padding: 6px 0;
+    background: var(--surface);
+  }
+  li {
+    display: grid;
+    grid-template-columns: 2.2em 7.5em 1fr 3em;
+    grid-template-areas: 'pos name track pts' '. split split split';
+    align-items: center;
+    column-gap: 10px;
+    padding: 7px 14px;
+  }
+  .pos {
+    grid-area: pos;
+    text-align: right;
+    font-stretch: 125%;
+    font-weight: 800;
+    font-style: italic;
+    color: var(--muted);
+  }
+  .name {
+    grid-area: name;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .league .name {
+    font-weight: 800;
+  }
+  .track {
+    grid-area: track;
+    display: flex;
+    height: 12px;
+    background: var(--surface-2);
+  }
+  .seg {
+    display: block;
+    height: 100%;
+  }
+  .seg.human {
+    background: var(--team);
+  }
+  .seg.ai {
+    background: color-mix(in srgb, var(--team) 38%, transparent);
+  }
+  .pts {
+    grid-area: pts;
+    text-align: right;
+    font-weight: 800;
+  }
+  .split {
+    grid-area: split;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  li:not(.league) .split {
+    color: var(--dim);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: 10px 0 0;
+  }
+  .key {
+    display: inline-block;
+    width: 18px;
+    height: 10px;
+    background: var(--text);
+  }
+  .key.ai {
+    background: color-mix(in srgb, var(--text) 38%, transparent);
+    margin-left: 10px;
+  }
+  @media (max-width: 480px) {
+    li {
+      grid-template-columns: 1.6em 6em 1fr 2.6em;
+      padding-inline: 10px;
+    }
+  }
+</style>
