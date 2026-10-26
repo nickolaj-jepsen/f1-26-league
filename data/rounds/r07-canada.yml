@@ -1,0 +1,6 @@
+race: canada
+sessions:
+  - type: race
+    date: 2026-10-26
+    source: csv
+    file: session_results_26102026_2112.csv
